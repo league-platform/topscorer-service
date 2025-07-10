@@ -34,10 +34,12 @@ jobs:
             sudo systemctl enable --now docker
             sudo usermod -aG docker ec2-user
 
-            mkdir -p ~/.docker/cli-plugins
-            curl -SL https://github.com/docker/compose/releases/download/v2.27.1/docker-compose-linux-x86_64               -o ~/.docker/cli-plugins/docker-compose
-            chmod +x ~/.docker/cli-plugins/docker-compose
-            sudo ln -sf ~/.docker/cli-plugins/docker-compose /usr/local/bin/docker-compose
+            # Instalar Docker Compose correctamente
+            sudo mkdir -p /usr/local/lib/docker/cli-plugins
+            sudo curl -SL https://github.com/docker/compose/releases/download/v2.27.1/docker-compose-linux-x86_64 \
+              -o /usr/local/lib/docker/cli-plugins/docker-compose
+            sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+            sudo ln -sf /usr/local/lib/docker/cli-plugins/docker-compose /usr/local/bin/docker-compose
 
             cd /home/ec2-user
 
@@ -46,11 +48,15 @@ jobs:
             fi
 
             cd topscorer-service
-            sudo chown -R ec2-user:ec2-user .
             git config --global --add safe.directory /home/ec2-user/topscorer-service
-            git reset --hard
-            git pull origin qa
+            git fetch origin qa
+            git reset --hard origin/qa
+
+            # Prevenir error de permisos con Docker buildx
+            export DOCKER_CONFIG=/tmp/docker-config
+            mkdir -p \$DOCKER_CONFIG/buildx
 
             docker compose down || true
             docker compose up -d --build
           EOF
+
